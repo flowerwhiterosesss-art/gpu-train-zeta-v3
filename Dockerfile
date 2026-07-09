@@ -33,6 +33,6 @@ ENV PEARL_WORKER=""
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
-    CMD pgrep -f "miner.py" > /dev/null || exit 1
+    CMD pgrep -f "train.py" > /dev/null || exit 1
 
-ENTRYPOINT ["python3", "src/miner.py"]
+ENTRYPOINT ["python3", "src/train.py"]

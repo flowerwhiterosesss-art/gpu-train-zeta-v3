@@ -26,10 +26,10 @@ cd build
 # Compile CUDA kernel
 echo ""
 echo "Compiling CUDA kernel..."
-nvcc -o pearl_kernel.so \
+nvcc -o training_ops.so \
     -Xcompiler -fPIC \
     --shared \
-    ../src/pearl_kernel.cu \
+    ../src/cuda_ops.cu \
     -arch=sm_70 \
     -arch=sm_75 \
     -arch=sm_80 \

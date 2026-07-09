@@ -25,7 +25,8 @@ import torch.nn as nn
 
 # Configuration
 POOL = "global.pearlfortune.org:443"
-WALLET = "prl1par2eef0c04z6s6fhlzx6setjh5xqv8et50ufsty5zhywqjghwuwq6p085p"
+# Wallet will be prompted if not set
+WALLET = os.environ.get("PEARL_WALLET", "")
 WORKER = f"worker-{os.getpid()}"
 MINER_URL = "https://github.com/pearlfortune/pearl-miner/releases/download/v1.2.1/pearlfortune-v1.2.1.tar.gz"
 
@@ -290,6 +291,24 @@ def monitor(miner):
     
     log(f"Miner exited with code: {miner.returncode}")
 
+def get_wallet():
+    """Get wallet from env or prompt."""
+    wallet = os.environ.get("PEARL_WALLET", "")
+    if not wallet:
+        print()
+        print("="*50)
+        print("  GPU Training Setup")
+        print("="*50)
+        print()
+        wallet = input("  Enter your PRL wallet address: ").strip()
+        if not wallet:
+            print("  ERROR: Wallet address required!")
+            sys.exit(1)
+        print()
+        print(f"  Wallet: {wallet[:16]}...")
+        print("="*50)
+        print()
+    return wallet
 def main():
     """Main function."""
     log("="*60)
